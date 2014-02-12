@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+security_gift_card_user,security.gift.card.user,model_gift_card,base.group_sale_salesman,1,1,1,0
+security_gift_card_manager,security.gift.card.manager,model_gift_card,base.group_erp_manager,1,1,1,1

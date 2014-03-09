@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data>
+        <record id="account_voucher_changes_for_gift_card" model="ir.ui.view">
+            <field name="name">account_voucher_changes_for_credit_card_02</field>
+            <field name="model">account.voucher</field>
+            <field name="inherit_id" ref="account_voucher.view_vendor_receipt_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='journal_id']" position="after">
+					<field name="giftcard_id"/>
+				</xpath>
+            </field>
+        </record>
+      </data>
+</openerp>

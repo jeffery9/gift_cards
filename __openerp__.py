@@ -23,11 +23,15 @@
     'name': 'Gift Cards',
     'version': '0.01',
     'category': 'Generic Modules/Others',
-    'description': "Creates a 'gift card' concept that acts like a customer payment account.",
+    'description': "Allows salespeople to issue and use gift cards.",
     'author': 'RyePDX LLC',
     'website': ' http://ryepdx.com',
     'depends': ['sale'],
-    'data': ['gift_view.xml', 'security/ir.model.access.csv'],
+    'data': [
+        'gift_view.xml',
+        'account_voucher_view.xml',
+        'security/ir.model.access.csv'
+    ],
     'installable': True,
     'active': True
 }

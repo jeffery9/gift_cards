@@ -9,7 +9,9 @@ class card(osv.osv):
     _rec_name = "number"
     _columns = {
         'number': fields.char('Card Number', size=19, readonly=True),
-        'value': fields.float('Card Value')
+        'value': fields.float('Balance'),
+        'voucher_ids': fields.one2many('account.voucher', 'giftcard_id', 'Vouchers', readonly=True),
+        'sale_order_line_id': fields.many2one('sale.order.line', 'Order Line', readonly=True)
     }
     _defaults = {
         # Creates a random string of 16 characters,

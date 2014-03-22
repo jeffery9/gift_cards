@@ -1,5 +1,6 @@
 import gift
 import account_voucher
+import product
 #import invoice
-#import sale
+import sale
 #import stock_return_picking

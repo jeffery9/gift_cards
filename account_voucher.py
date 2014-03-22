@@ -20,6 +20,7 @@
 
 from openerp import netsvc
 from openerp.osv import osv, fields
+from openerp.tools.translate import _
 
 class account_voucher(osv.osv):
     '''
@@ -49,13 +50,10 @@ class account_voucher(osv.osv):
         # We want to grab all the vouchers with gift cards and make an index
         # of their gift cards' balances, keyed off the gift card numbers, to
         # facilitate checking those balances against the charges against them.
-        # We're doing it this way because it's possible for a single gift card
-        # to be used on multiple account_vouchers, so we can't just check gift
-        # card balances against the account_voucher they happen to belong to.
         vouchers_with_giftcards = [
             voucher for voucher in vouchers if voucher.giftcard_id
         ]
-        giftcards = dict([(voucher.giftcard_id.number, voucher.giftcard_id.value)
+        giftcards = dict([(voucher.giftcard_id.number, voucher.giftcard_id.balance)
             for voucher in vouchers_with_giftcards
         ])
 
@@ -63,8 +61,12 @@ class account_voucher(osv.osv):
         # Raises an exception if a gift card doesn't have enough of a balance.
         # This is the only way to bubble error messages up to the user in OERP.
         for voucher in vouchers_with_giftcards:
-            giftcards[voucher.giftcard_id.number] -= voucher.amount
-            if giftcards[voucher.giftcard_id.number] <= 0:
+            gcard = voucher.giftcard_id
+            if not gcard.active:
+                raise osv.except_osv(_('Error'), _('Gift card (%s) is not active!') % gcard.number)
+
+            giftcards[gcard.number] -= voucher.amount
+            if giftcards[gcard.number] <= 0:
                 raise osv.except_osv(_('Error'), _("Gift card has insufficient funds!"))
         return True
 
@@ -85,7 +87,7 @@ class account_voucher(osv.osv):
         # Subtract charges from gift cards.
         for voucher in filter(lambda voucher: voucher.giftcard_id, vouchers):
             giftcard_orm.write(cr, uid, [voucher.giftcard_id.id], {
-                'value': voucher.giftcard_id.value - voucher.amount
+                'balance': voucher.giftcard_id.balance - voucher.amount
             })
 
         # Mark the payment lines as processed/validated.
@@ -95,6 +97,22 @@ class account_voucher(osv.osv):
             wf_service.trg_validate(uid, 'account.voucher', res_id, 'proforma_voucher', cr)
 
         return True
+
+
+    def cancel_voucher(self, cr, uid, ids, context=None):
+        giftcard_orm = self.pool.get('gift.card')
+
+        # Make sure the vouchers can be cancelled. This line will throw an exception if they can't.
+        super(account_voucher, self).cancel_voucher(cr, uid, ids, context=context)
+
+        # Increase the balances of any associated gift cards by the amounts being refunded.
+        for voucher in self.browse(cr, uid, ids, context=context):
+            if voucher.giftcard_id:
+                giftcard_orm.write(cr, uid, [voucher.giftcard_id.id], {
+                    'balance': voucher.giftcard_id.balance + voucher.amount
+                })
+        return True
+
 
     def proforma_voucher(self, cr, uid, ids, context=None):
         self.authorize_card(cr, uid, ids, context=context)

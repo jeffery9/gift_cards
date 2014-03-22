@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="sales_order_gift_cards" model="ir.ui.view">
+            <field name="name">sale.order.form</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@string='Other Information']" position="after">
+                    <page string="Gift Cards" groups="base.group_user"
+                          attrs="{'invisible': [('has_giftcards','=',False)]}">
+                        <!-- We aren't filtering gift cards by 'active' here because 'active' is a direct reflection of the sale order's state. -->
+                        <!-- Thus it's not very useful or helpful to *hide* inactive gift cards on a sales order. -->
+                        <field name="giftcard_ids" placeholder="No gift cards on this order..." />
+                        <field name="has_giftcards" invisible="1" />
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</openerp>

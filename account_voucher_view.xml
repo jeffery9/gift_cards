@@ -7,7 +7,8 @@
             <field name="inherit_id" ref="account_voucher.view_vendor_receipt_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='journal_id']" position="after">
-					<field name="giftcard_id"/>
+					<field name="giftcard_id" domain="[('balance','>',0)]"/>
+					<button name="giftcard_refund" icon="gtk-execute" string="Refund" type="object" attrs="{'readonly': [('state','=','draft')], 'invisible' : [('giftcard_id','=',False)]}" groups="account_payment_creditcard.group_cc_mgr"/>
 				</xpath>
             </field>
         </record>

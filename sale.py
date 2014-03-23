@@ -21,20 +21,20 @@ class sale_order(osv.osv):
         super(sale_order, self).action_done(cr, uid, ids, context=context)
 
         success = True
-        cardPool = self.pool.get('gift.card')
-        linePool = self.pool.get('sale.order.line')
+        card_pool = self.pool.get('gift.card')
+        line_pool = self.pool.get('sale.order.line')
 
         for order in self.browse(cr, uid, ids, context=context):
             for line in order.order_line:
                 if line.product_id and line.product_id.giftcard:
                     for i in range(0, int(line.product_uom_qty)):
-                        new_card_id = cardPool.create(cr, uid, {
+                        new_card_id = card_pool.create(cr, uid, {
                             "balance": line.price_unit,
                             'sale_order_line_id': line.id,
                             'order_id': order.id
                         }, context=context)
 
-                        linePool.write(cr, uid, line.id, {
+                        line_pool.write(cr, uid, line.id, {
                             "giftcard_id": new_card_id
                         })
 

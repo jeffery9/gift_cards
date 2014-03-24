@@ -40,7 +40,7 @@ class account_invoice(osv.osv):
         voucher_orm = self.pool.get("account.voucher")
         results = []
 
-        if not hasattr(ids, "__init__"):
+        if not hasattr(ids, "__iter__"):
             ids = [ids]
 
         # Doing this one at a time so we can associate refund invoices with their originals.
@@ -55,10 +55,10 @@ class account_invoice(osv.osv):
             # to the user which cards were debited.
 
             # Now debit any gift cards that were bought with this invoice.
-            order_id = order_orm.search(cr, uid, [('invoice_ids', 'in', id)])
-            giftcards = sorted(giftcard_orm.browse(cr, uid, order_id), lambda x, y: x.balance - y.balance)
+            order = order_orm.browse(cr, uid, order_orm.search(cr, uid, [('invoice_ids', 'in', id)]))
+            giftcards = sorted(order.giftcard_ids, lambda x, y: x.balance - y.balance)
             new_balances = []
-            balances = [(card.id, card.balance) for card in giftcards]
+            balances = [{"id":card.id, "balance": card.balance} for card in giftcards]
 
             # Remove, at most, the amount paid for these cards.
             debit_total = min(
@@ -72,9 +72,9 @@ class account_invoice(osv.osv):
             # them back their dollar. Otherwise we're in a situation where we're giving them
             # back money they've already spent!
             for i in range(0, len(balances)):
-                debit = min(balances[i][1], debit_total)
+                debit = min(balances[i]["balance"], debit_total)
                 debit_total -= debit
-                new_balances.append([(balances[i][0], (balances[i][1] - debit))])
+                new_balances.append([{"id": balances[i]["id"], "balance": (balances[i]["balance"] - debit)}])
 
                 if debit_total <= 0:
                     break
@@ -110,8 +110,8 @@ class account_invoice(osv.osv):
                         })
 
                     # Write all debits to purchased gift cards.
-                    for balance in new_balances:
-                        giftcard_orm.write(cr, uid, balance[0], {"balance": balance[1]})
+                    for card in new_balances:
+                        giftcard_orm.write(cr, uid, card["id"], {"balance": card["balance"]})
 
                 # Append result to our list of results, no matter what.
                 results.append(result[0])

@@ -27,15 +27,20 @@ from openerp.tools.translate import _
 # The trick here is that refunded gift cards need to be zeroed out on *other*
 # types of refunds as well.
 def refund_amount(sale_order, move, quantity):
-    amount = 0.00
-    for sale_line in sale_order.order_line:
-        if sale_line.product_id and sale_line.product_id.id == move.product_id.id:
-            if sale_line.giftcard_id:
-                amount += sum([card.balance for card in sale_line.giftcard_id])
+    # Simplest case: the move line's order line has a gift card associated with it.
+    if move.sale_line_id and move.sale_line_id.giftcard_id:
+        return move.sale_line_id.giftcard_id.balance
+
+    # Otherwise, find the first order line with a matching product ID and use that.
+    for line in sale_order.order_line:
+        if line.product_id and line.product_id.id == move.product_id.id:
+            if line.giftcard_id:
+                return line.giftcard_id.balance
             else:
-                amount += ((sale_line.price_subtotal / sale_line.product_uom_qty or 1) * quantity)
-            break
-    return amount
+                return ((line.price_subtotal / line.product_uom_qty or 1) * quantity)
+
+    # Nothing matched? Then just refund nothing.
+    return 0.00
 
 class stock_return_picking(osv.TransientModel):
     _inherit = 'stock.return.picking'
@@ -43,7 +48,7 @@ class stock_return_picking(osv.TransientModel):
         'invoice_state': fields.selection(
             [('2binvoiced', 'To be refunded/invoiced'), ('none', 'No invoicing'),
              ('cc_refund','Credit Card Refund'), ('gc_refund', 'Gift Card Refund')], 'Invoicing', required=True),
-        'giftcard_id': fields.many2one('gift.card', 'Gift Card', {'required': False})
+        'giftcard_id': fields.many2one('gift.card', 'Gift Card for Refund', {'required': False})
     }
 
     def default_get(self, cr, uid, fields, context=None):
@@ -153,22 +158,22 @@ class stock_picking(osv.osv):
     
     _inherit = "stock.picking"
     _columns = {
-         # Create voucher, or use gift card as above?
-         #'voucher_id' : fields.many2one('account.voucher', 'Refund Voucher', readonly=True)
-        'giftcard_id': fields.many2one('gift.card', 'Gift Card for Returns', {'required': False})
+        'giftcard_id': fields.many2one('gift.card', 'Gift Card for Refund', {'required': False})
     }
 
     def do_partial(self, cr, uid, ids, partial_data, context=None):
-        voucher_obj = self.pool.get('account.voucher')
-        giftcard_orm = self.pool.get("gift.card")
         res = super(stock_picking, self).do_partial(cr, uid, ids, partial_data, context=context)
+        if not res:
+            return res
+
+        giftcard_orm = self.pool.get("gift.card")
 
         for pick in self.browse(cr, uid, ids, context=context):
             # We only need to take action on incoming/returned stock.
             if pick.type == "out":
                 continue
 
-            # Not sure what this does yet. Just aping the cc_api code.
+            # Not exactly sure what this does yet. Just aping the cc_api code.
             if (pick.type == 'in' and pick.invoice_state == 'gc_refund' and pick.voucher_id and
                 pick.state == 'assigned' and not pick.backorder_id.id
             ):
@@ -181,28 +186,19 @@ class stock_picking(osv.osv):
                 lines = pick.backorder_id.move_lines
 
             for move in lines:
-                partial_data = partial_data.get('move%s'%(move.id), {})
-                new_qty = partial_data.get('product_qty',0.0)
-                line = {
-                    'product_id': move.product_id.id,
-                    'qty': new_qty,
-                    'price_unit': move.product_id.list_price
-                }
-
                 # For every line in the sale order, grab the amount spent on that line (or the amount
                 # left in the gift cards for that line) and tally it up for refunding to the gift card.
                 if pick.sale_id:
-                    amount = refund_amount(pick.sale_id, move, new_qty)
+                    partial_data = partial_data.get('move%s'%(move.id), {})
+                    amount += refund_amount(pick.sale_id, move, partial_data.get('product_qty',0.0))
 
-            # If there's some amount to refund to our chosen gift card, refund it.
-            if amount:
-                curr_card = giftcard_orm.read(cr, uid, pick.giftcard_id)
-                giftcard_orm.write(cr, uid, pick.giftcard_id, {"balance": curr_card['balance'] + amount})
+                # Zero out whatever gift cards were returned.
+                if move.sale_line_id and move.sale_line_id.giftcard_id:
+                    giftcard_orm.write(cr, uid, move.sale_line_id.giftcard_id, {"balance": 0})
 
-
-            # If the parent's partial return code was successful, then zero out whatever gift cards were returned.
-            #if res and pick.sale_id and pick.sale_id.has_giftcards:
-            #    giftcard_orm
+            # If there's some amount to refund, then refund it.
+            if amount and pick.giftcard_id:
+                giftcard_orm.write(cr, uid, pick.giftcard_id, {"balance": pick.giftcard_id.balance + amount})
 
         return res
 stock_picking()

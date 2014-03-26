@@ -69,6 +69,7 @@ class stock_return_picking(osv.TransientModel):
         voucher_orm = self.pool.get('account.voucher')
         pick = pick_obj.browse(cr, uid, record_id, context=context)
 
+        # Refund to gift card on a voucher if a gift card was used, by default.
         if pick:
             if 'invoice_state' in fields:
                 voucher_ids = voucher_orm.read(cr, uid, voucher_orm.search(cr, uid, [
@@ -160,6 +161,37 @@ class stock_picking(osv.osv):
              ('cc_refund','Credit Card Refund'), ('gc_refund', 'Gift Card Refund')], 'Invoicing', required=True),
         'giftcard_id': fields.many2one('gift.card', 'Gift Card for Refund', {'required': False})
     }
+
+    def default_get(self, cr, uid, fields, context=None):
+        """
+         To get default values for the object.
+         @param self: The object pointer.
+         @param cr: A database cursor
+         @param uid: ID of the user currently logged in
+         @param fields: List of fields for which we want default values
+         @param context: A standard dictionary
+         @return: A dictionary with default values for all field in ``fields``
+        """
+        if context is None:
+            context = {}
+        res = super(stock_return_picking, self).default_get(cr, uid, fields, context=context)
+        record_id = context and context.get('active_id', False) or False
+        pick_obj = self.pool.get('stock.picking')
+        voucher_orm = self.pool.get('account.voucher')
+        pick = pick_obj.browse(cr, uid, record_id, context=context)
+
+        # Refund to gift card on a voucher if a gift card was used, by default.
+        if pick:
+            if 'invoice_state' in fields:
+                voucher_ids = voucher_orm.read(cr, uid, voucher_orm.search(cr, uid, [
+                    ('rel_sale_order_id', '=', pick.sale_id.id), ('state', '=', 'posted'),
+                    ('type', '=', 'receipt'), ('giftcard_id', '!=', False)
+                ], order="id desc", context=context), context=context)
+
+                if voucher_ids:
+                    res['invoice_state'] = 'gc_refund'
+                    res['giftcard_id'] = voucher_ids[0].giftcard_id
+        return res
 
     def do_partial(self, cr, uid, ids, partial_data, context=None):
         res = super(stock_picking, self).do_partial(cr, uid, ids, partial_data, context=context)

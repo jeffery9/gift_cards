@@ -36,9 +36,9 @@
         'account_payment_cim_authdotnet'
     ],
     'data': [
-        'gift_view.xml',
-        'account_voucher_view.xml',
         'account_invoice_view.xml',
+        'account_voucher_view.xml',
+        'gift_view.xml',
         'product_view.xml',
         'security/ir.model.access.csv',
         'sale_view.xml'

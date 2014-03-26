@@ -25,8 +25,13 @@ from openerp.osv import osv, fields
 from openerp.tools.translate import _
 
 # The trick here is that refunded gift cards need to be zeroed out on *other*
-# types of refunds as well.
+# types of refunds as well. And other types of refunds need to refund only the
+# *remaining balance* of the gift card.
 def refund_amount(sale_order, move, quantity):
+    """
+    Calculates the amount that should be refunded, given a particular sale order and move line.
+
+    """
     # Simplest case: the move line's order line has a gift card associated with it.
     if move.sale_line_id and move.sale_line_id.giftcard_id:
         return move.sale_line_id.giftcard_id.balance
@@ -85,7 +90,7 @@ class stock_return_picking(osv.TransientModel):
     # TODO: Find out if cc_api's implementation is as completely fucked as it seems.
     def create_returns(self, cr, uid, ids, context=None):
         """
-         Creates return picking.
+         Creates return picking. Also refunds and zeroes out gift cards as necessary.
          @param self: The object pointer.
          @param cr: A database cursor
          @param uid: ID of the user currently logged in
@@ -193,6 +198,10 @@ class stock_picking(osv.osv):
         return res
 
     def do_partial(self, cr, uid, ids, partial_data, context=None):
+        """
+        Refunds and zeroes out gift cards as necessary upon receipt of a gift card return.
+        
+        """
         res = super(stock_picking, self).do_partial(cr, uid, ids, partial_data, context=context)
         if not res:
             return res

@@ -18,6 +18,10 @@ class sale_order(osv.osv):
     }
 
     def action_done(self, cr, uid, ids, context=None):
+        """
+        Creates gift cards for each relevant order line upon payment of this sale order's invoice.
+
+        """
         super(sale_order, self).action_done(cr, uid, ids, context=context)
 
         success = True
@@ -43,6 +47,11 @@ class sale_order(osv.osv):
         return success
 
     def action_wait(self, cr, uid, ids, context=None):
+        """
+        Creates a separate order line for every gift card in this order.
+        Called when the sale is confirmed.
+
+        """
         success = True
         line_orm = self.pool.get('sale.order.line')
 

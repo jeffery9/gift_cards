@@ -34,6 +34,7 @@ class account_invoice(osv.osv):
     }
 
     def refund(self, cr, uid, ids, date=None, period_id=None, description=None, journal_id=None, context=None):
+        """Refunds the invoice, crediting and debiting gift cards as necessary."""
         order_orm = self.pool.get("sale.order")
         giftcard_orm = self.pool.get("gift.card")
         voucher_orm = self.pool.get("account.voucher")

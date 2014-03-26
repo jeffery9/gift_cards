@@ -100,6 +100,10 @@ class account_voucher(osv.osv):
 
 
     def cancel_voucher(self, cr, uid, ids, context=None):
+        '''
+        Handles increasing the balance of the gift card used to pay for a voucher
+        when the voucher it was used to pay for is canceled.
+        '''
         giftcard_orm = self.pool.get('gift.card')
 
         # Make sure the vouchers can be cancelled. This line will throw an exception if they can't.
@@ -115,6 +119,9 @@ class account_voucher(osv.osv):
 
 
     def proforma_voucher(self, cr, uid, ids, context=None):
+        '''
+        Called when a payment is added to an invoice.
+        '''
         self.authorize_card(cr, uid, ids, context=context)
         return super(account_voucher, self).proforma_voucher(cr, uid, ids, context=context)
     

@@ -3,6 +3,7 @@ from helpers.shortuuid import uuid
 from openerp.osv import fields, osv
 
 class card(osv.osv):
+    """Represents a gift card in the system."""
     _name = "gift.card"
     _rec_name = "number"
     _columns = {

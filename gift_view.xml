@@ -24,7 +24,6 @@
                 <tree string="Gift Cards">
                     <field name="number"/>
                     <field name="balance"/>
-                    <field name="active"/>
                 </tree>
             </field>
         </record>
@@ -40,7 +39,6 @@
                         <field name="balance" colspan="4"/>
                         <field name="order_id" colspan="4" string="Receipt" />
                         <field name="voucher_ids" colspan="4" string="History" />
-                        <field name="active" />
                     </group>
                 </form>
             </field>

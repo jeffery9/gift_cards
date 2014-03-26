@@ -26,7 +26,15 @@
     'description': "Allows salespeople to issue and use gift cards.",
     'author': 'RyePDX LLC',
     'website': ' http://ryepdx.com',
-    'depends': ['account', 'account_voucher', 'sale_stock', 'account_payment_ccapi_authdotnet'],
+    'depends': [
+        'account',
+        'account_voucher',
+        'stock',
+        'sale_stock',
+        'account_payment_ccapi_authdotnet',
+        'account_payment_creditcard',
+        'account_payment_cim_authdotnet'
+    ],
     'data': [
         'gift_view.xml',
         'account_voucher_view.xml',

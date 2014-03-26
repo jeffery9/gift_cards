@@ -3,22 +3,14 @@ from helpers.shortuuid import uuid
 from openerp.osv import fields, osv
 
 class card(osv.osv):
-    '''Represents a gift card issued to a customer.'''
-    def _active(self, cr, uid, ids, field_name, arg, context=None):
-        res = {}
-        for gcard in self.browse(cr, uid, ids, context=context):
-            res[gcard.id] = (gcard.sale_order_line_id.state != 'cancel')
-        return res
-
     _name = "gift.card"
     _rec_name = "number"
     _columns = {
         'number': fields.char('Card Number', size=19),
-        'balance': fields.float('Balance', readonly=True),
+        'balance': fields.float('Balance'),#, readonly=True),
         'voucher_ids': fields.one2many('account.voucher', 'giftcard_id', 'Vouchers', readonly=True),
         'sale_order_line_id': fields.many2one('sale.order.line', 'Order Line', readonly=True),
-        'order_id': fields.many2one('sale.order', 'Sale Order', readonly=True),
-        'active': fields.function(_active, type="boolean", string="Active", method=True, readonly=True)
+        'order_id': fields.many2one('sale.order', 'Sale Order', readonly=True)
     }
     _defaults = {
         # Creates a random string of 16 characters,

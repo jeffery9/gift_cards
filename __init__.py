@@ -3,4 +3,4 @@ import account_voucher
 import product
 #import invoice
 import sale
-#import stock_return_picking
+import stock_return_picking

@@ -71,19 +71,19 @@ class stock_return_picking(osv.TransientModel):
 
         if pick:
             if 'invoice_state' in fields:
-                voucher_ids = voucher_orm.search_read(cr, uid, [
+                voucher_ids = voucher_orm.read(cr, uid, voucher_orm.search(cr, uid, [
                     ('rel_sale_order_id', '=', pick.sale_id.id), ('state', '=', 'posted'),
                     ('type', '=', 'receipt'), ('giftcard_id', '!=', False)
-                ], order="id desc", context=context)
+                ], order="id desc", context=context), context=context)
 
                 if voucher_ids:
                     res['invoice_state'] = 'gc_refund'
-                    res['giftcard_id'] = voucher_ids[0]['giftcard_id']
+                    res['giftcard_id'] = voucher_ids[0].giftcard_id
         return res
 
     # TODO: Find out if cc_api's implementation is as completely fucked as it seems.
     def create_returns(self, cr, uid, ids, context=None):
-        """ 
+        """
          Creates return picking.
          @param self: The object pointer.
          @param cr: A database cursor
@@ -94,7 +94,7 @@ class stock_return_picking(osv.TransientModel):
         """
         if context is None:
             context = {}
-        
+
         record_id = context and context.get('active_id', False) or False
         move_obj = self.pool.get('stock.move')
         pick_obj = self.pool.get('stock.picking')
@@ -107,33 +107,30 @@ class stock_return_picking(osv.TransientModel):
         data = self.read(cr, uid, ids[0], context=context)
         res = super(stock_return_picking, self).create_returns(cr, uid, ids, context=context)
 
-        # If the parent refund code was successful, then we want to zero out whatever cards were just refunded.
-        if res and pick.sale_id and pick.sale_id.has_giftcards:
-            giftcard_orm.write(cr, uid, [card.id for card in pick.sale_id.giftcards], {"balance": 0})
-        
         move_lines = data['product_return_moves']
-        #@ Moving the refund process to On Delivery process of related incoming shipment
 
-        # If user selected "Gift Card" refund...
-        if data['invoice_state'] == 'gc_refund':
-            amount = 0.00
+        amount = 0.00
 
-            # ...for every line in the delivery order...
-            for move in move_lines:
+        # ...for every line in the delivery order...
+        for move in move_lines:
 
-                # ...get the line and delivery order we're supposed to refund....
-                return_line = data_obj.browse(cr, uid, move, context=context)
-                move = move_obj.browse(cr, uid, return_line.move_id.id, context=context)
+            # ...get the line and delivery order we're supposed to refund.
+            return_line = data_obj.browse(cr, uid, move, context=context)
+            move = move_obj.browse(cr, uid, return_line.move_id.id, context=context)
 
-                # ...and compute the amount we'll be refunding.
-                if pick.sale_id:
-                    amount = refund_amount(pick.sale_id, move, return_line.quantity)
+            # If the parent refund code was successful, then we want to zero out whatever cards were just refunded.
+            if res and move.sale_line_id and move.sale_line_id.giftcard_id:
+                giftcard_orm.write(cr, uid, [move.sale_line_id.giftcard_id.id], {"balance": 0, "active": False})
 
-            # Is there an amount we need to refund?
-            if amount:
+            # Compute the amount we'll be refunding.
+            if pick.sale_id:
+                amount = refund_amount(pick.sale_id, move, return_line.quantity)
+
+            # Is there an amount we need to refund, and did the user select 'gift card refund'?
+            if amount and data['invoice_state'] == 'gc_refund':
                 # Refund the selected gift card.
                 giftcard = giftcard_orm.browse(cr, uid, data['giftcard_id'], context=context)
-                giftcard_orm.write(cr, uid, data['giftcard_id'], { 'balance': giftcard.balance + amount })
+                giftcard_orm.write(cr, uid, data['giftcard_id'], {'balance': giftcard.balance + amount})
 
                 # Grab all the vouchers with gift cards to be moved over to the new delivery order...?
                 voucher_ids = voucher_obj.search(cr, uid, [
@@ -158,6 +155,9 @@ class stock_picking(osv.osv):
     
     _inherit = "stock.picking"
     _columns = {
+        'invoice_state': fields.selection(
+            [('2binvoiced', 'To be refunded/invoiced'), ('none', 'No invoicing'),
+             ('cc_refund','Credit Card Refund'), ('gc_refund', 'Gift Card Refund')], 'Invoicing', required=True),
         'giftcard_id': fields.many2one('gift.card', 'Gift Card for Refund', {'required': False})
     }
 
@@ -173,7 +173,7 @@ class stock_picking(osv.osv):
             if pick.type == "out":
                 continue
 
-            # Not exactly sure what this does yet. Just aping the cc_api code.
+            # Not exactly sure what this does yet. Just aping the cc_api code. (TODO: Figure out why cc_api does this.)
             if (pick.type == 'in' and pick.invoice_state == 'gc_refund' and pick.voucher_id and
                 pick.state == 'assigned' and not pick.backorder_id.id
             ):
@@ -194,7 +194,7 @@ class stock_picking(osv.osv):
 
                 # Zero out whatever gift cards were returned.
                 if move.sale_line_id and move.sale_line_id.giftcard_id:
-                    giftcard_orm.write(cr, uid, move.sale_line_id.giftcard_id, {"balance": 0})
+                    giftcard_orm.write(cr, uid, move.sale_line_id.giftcard_id, {"balance": 0, "active": False})
 
             # If there's some amount to refund, then refund it.
             if amount and pick.giftcard_id:

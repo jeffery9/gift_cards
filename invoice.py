@@ -27,8 +27,7 @@ class account_invoice(osv.osv):
     
     _inherit = 'account.invoice'
     _columns = {
-        'gift_card' : fields.boolean('Gift Card', readonly=True),
-        #'refund_invoice_id': fields.many2one('account.invoice', 'Refund Invoice', {'required': False, 'readonly': True})
+        'gift_card' : fields.boolean('Gift Card', readonly=True)
     }
     _defaults = {
         'gift_card' : False
@@ -97,9 +96,6 @@ class account_invoice(osv.osv):
                 )
 
                 if result:
-                    # Set our invoice's refund_invoice_id property.
-                    self.update(cr, uid, id, {"refund_invoice_id": result[0]})
-
                     # Refund all gift cards used to pay for this invoice.
                     for voucher in voucher_orm.search_read(cr, uid, [
                         ('move_id', '=', invoice.move_id), ('giftcard_id', '!=', False)

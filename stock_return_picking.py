@@ -38,6 +38,7 @@ def refund_amount(sale_order, move, quantity):
 
     # Otherwise, find the first order line with a matching product ID and use that.
     for line in sale_order.order_line:
+        # Gift cards are non-refundable.
         if line.product_id and line.product_id.id == move.product_id.id and not line.giftcard_id:
             return ((line.price_subtotal / line.product_uom_qty or 1) * quantity)
 

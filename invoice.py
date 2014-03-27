@@ -38,84 +38,30 @@ class account_invoice(osv.osv):
         order_orm = self.pool.get("sale.order")
         giftcard_orm = self.pool.get("gift.card")
         voucher_orm = self.pool.get("account.voucher")
-        results = []
 
         if not hasattr(ids, "__iter__"):
             ids = [ids]
 
-        # Doing this one at a time so we can associate refund invoices with their originals.
-        for id in ids:
+        result = super(account_invoice, self).refund(
+            cr, uid, ids, date=date, period_id=period_id,
+            description=description, journal_id=journal_id, context=context
+        )
 
-            invoice = self.browse(cr, uid, id, context=context)
+        # Don't proceed to refunding gift cards if the superclass' refund attempt failed.
+        if not result:
+            return result
 
-            # TODO: Make this more flexible? What if they only paid a very
-            # little bit with this invoice and just want to cancel *this*
-            # invoice but leave everything else intact? The tricky bit, of
-            # course, is picking *which* cards to debit and communicating
-            # to the user which cards were debited.
+        for invoice in self.browse(cr, uid, ids):
+            # Refund all gift cards used to pay for this invoice.
+            for voucher in voucher_orm.read(voucher_orm.search(cr, uid, [
+                ('move_id', '=', invoice.move_id), ('giftcard_id', '!=', False)
+            ])):
+                giftcard = giftcard_orm.browse(cr, uid, voucher['giftcard_id'])
+                giftcard_orm.write(cr, uid, voucher['giftcard_id'], {
+                    "balance": giftcard.balance + voucher['amount']
+                })
 
-            # Now debit any gift cards that were bought with this invoice.
-            order = order_orm.browse(cr, uid, order_orm.search(cr, uid, [('invoice_ids', 'in', id)]))
-            giftcards = sorted(order.giftcard_ids, lambda x, y: x.balance - y.balance)
-            new_balances = []
-            balances = [{"id":card.id, "balance": card.balance} for card in giftcards]
-
-            # Remove, at most, the amount paid for these cards.
-            debit_total = min(
-                invoice.amount_total, sum([card.sale_order_line_id.price_unit for card in giftcards])
-            )
-
-            # Verify that there is enough left on the cards bought with this invoice to cover
-            # the amount being refunded. For example, if someone bought a $5 gift card, and the
-            # invoice being refunded paid for $1 on that gift card, then we need to make sure
-            # there's at least $1 left on that card for us to *remove* from it before we give
-            # them back their dollar. Otherwise we're in a situation where we're giving them
-            # back money they've already spent!
-            for i in range(0, len(balances)):
-                debit = min(balances[i]["balance"], debit_total)
-                debit_total -= debit
-                new_balances.append([{"id": balances[i]["id"], "balance": (balances[i]["balance"] - debit)}])
-
-                if debit_total <= 0:
-                    break
-
-            if debit_total > 0:
-                raise osv.except_osv(_("Error"), _("This invoice was used to buy gift cards which were, in turn, " +
-                                         "used on other invoices. Refund enough invoices on the gift cards to cover " +
-                                         "the refund of this invoice and try again."))
-
-            if debit_total < 0:
-                # This should *never* happen, but we're catching it here for completeness.
-                osv.except_osv(_("Error"), _("Ended up with a negative debit after refunding gift cards!"))
-
-            if debit_total == 0:
-                # This is the normal case. If we've reached this point, go ahead and commit
-                # the debits to the database.
-                result = super(account_invoice, self).refund(
-                    cr, uid, [ids], date=date, period_id=period_id,
-                    description=description, journal_id=journal_id, context=context
-                )
-
-                if result:
-                    # Refund all gift cards used to pay for this invoice.
-                    for voucher in voucher_orm.search_read(cr, uid, [
-                        ('move_id', '=', invoice.move_id), ('giftcard_id', '!=', False)
-                    ]):
-                        giftcard = giftcard_orm.browse(cr, uid, voucher['giftcard_id'])
-                        giftcard_orm.write(cr, uid, voucher['giftcard_id'], {
-                            "balance": giftcard.balance + voucher['amount']
-                        })
-
-                    # Write all debits to purchased gift cards.
-                    for card in new_balances:
-                        giftcard_orm.write(cr, uid, card["id"], {"balance": card["balance"]})
-
-                # Append result to our list of results, no matter what.
-                results.append(result[0])
-
-            cr.commit()
-
-        return results
+        return result
 
 account_invoice()
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

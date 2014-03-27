@@ -70,7 +70,18 @@ class sale_order(osv.osv):
 sale_order()
 
 class sale_order_line(osv.osv):
+    def _refund_value(self, cr, uid, ids, field_name, arg, context):
+        if not hasattr(ids, "__iter__"):
+            ids = [ids]
+
+        values = {}
+        for line in self.browse(cr, uid, ids):
+            values[line.id] = 0 if line.giftcard_id else (line.price_subtotal / line.product_uom_qty or 1)
+
+        return values
+
     _inherit = "sale.order.line"
     _columns = {
-        'giftcard_id': fields.many2one('gift.card', 'Gift Card', required=False, readonly=True)
+        'giftcard_id': fields.many2one('gift.card', 'Gift Card', required=False, readonly=True),
+        'refund_value': fields.function(_refund_value, type="float", method=True)
     }

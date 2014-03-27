@@ -38,11 +38,8 @@ def refund_amount(sale_order, move, quantity):
 
     # Otherwise, find the first order line with a matching product ID and use that.
     for line in sale_order.order_line:
-        if line.product_id and line.product_id.id == move.product_id.id:
-            if line.giftcard_id:
-                return line.giftcard_id.balance
-            else:
-                return ((line.price_subtotal / line.product_uom_qty or 1) * quantity)
+        if line.product_id and line.product_id.id == move.product_id.id and not line.giftcard_id:
+            return ((line.price_subtotal / line.product_uom_qty or 1) * quantity)
 
     # Nothing matched? Then just refund nothing.
     return 0.00
@@ -87,7 +84,7 @@ class stock_return_picking(osv.TransientModel):
                     res['giftcard_id'] = voucher_ids[0].giftcard_id
         return res
 
-    # TODO: Find out if cc_api's implementation is as completely fucked as it seems.
+    # TODO: Find out if cc_api's implementation is as completely broken as it seems.
     def create_returns(self, cr, uid, ids, context=None):
         """
          Creates return picking. Also refunds and zeroes out gift cards as necessary.
@@ -123,10 +120,6 @@ class stock_return_picking(osv.TransientModel):
             # ...get the line and delivery order we're supposed to refund.
             return_line = data_obj.browse(cr, uid, move, context=context)
             move = move_obj.browse(cr, uid, return_line.move_id.id, context=context)
-
-            # If the parent refund code was successful, then we want to zero out whatever cards were just refunded.
-            if res and move.sale_line_id and move.sale_line_id.giftcard_id:
-                giftcard_orm.write(cr, uid, [move.sale_line_id.giftcard_id.id], {"balance": 0, "active": False})
 
             # Compute the amount we'll be refunding.
             if pick.sale_id:
@@ -200,7 +193,7 @@ class stock_picking(osv.osv):
     def do_partial(self, cr, uid, ids, partial_data, context=None):
         """
         Refunds and zeroes out gift cards as necessary upon receipt of a gift card return.
-        
+        s
         """
         res = super(stock_picking, self).do_partial(cr, uid, ids, partial_data, context=context)
         if not res:
@@ -231,10 +224,6 @@ class stock_picking(osv.osv):
                 if pick.sale_id:
                     partial_data = partial_data.get('move%s'%(move.id), {})
                     amount += refund_amount(pick.sale_id, move, partial_data.get('product_qty',0.0))
-
-                # Zero out whatever gift cards were returned.
-                if move.sale_line_id and move.sale_line_id.giftcard_id:
-                    giftcard_orm.write(cr, uid, move.sale_line_id.giftcard_id, {"balance": 0, "active": False})
 
             # If there's some amount to refund, then refund it.
             if amount and pick.giftcard_id:

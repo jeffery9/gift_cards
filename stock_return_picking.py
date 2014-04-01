@@ -173,7 +173,7 @@ class stock_picking(osv.osv):
         """
         if context is None:
             context = {}
-        res = super(stock_return_picking, self).default_get(cr, uid, fields, context=context)
+        res = super(stock_picking, self).default_get(cr, uid, fields, context=context)
         record_id = context and context.get('active_id', False) or False
         voucher_orm = self.pool.get('account.voucher')
         pick = self.browse(cr, uid, record_id, context=context)

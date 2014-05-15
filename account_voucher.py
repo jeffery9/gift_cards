@@ -62,7 +62,7 @@ class account_voucher(osv.osv):
         # This is the only way to bubble error messages up to the user in OERP.
         for voucher in vouchers_with_giftcards:
             gcard = voucher.giftcard_id
-            if not gcard.active:
+            if hasattr(gcard, "active") and not gcard.active:
                 raise osv.except_osv(_('Error'), _('Gift card (%s) is not active!') % gcard.number)
 
             giftcards[gcard.number] -= voucher.amount

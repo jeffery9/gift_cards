@@ -155,9 +155,14 @@ class stock_picking(osv.osv):
     
     _inherit = "stock.picking"
     _columns = {
-        'invoice_state': fields.selection(
-            [('2binvoiced', 'To be refunded/invoiced'), ('none', 'No invoicing'),
-             ('cc_refund','Credit Card Refund'), ('gc_refund', 'Gift Card Refund')], 'Invoicing', required=True),
+        'invoice_state': fields.selection([
+            ("invoiced", "Invoiced"),
+            ("2binvoiced", "To Be Invoiced"),
+            ("none", "Not Applicable"),
+            ("credit_card", "Credit Card"),
+            ("cc_refund", "Credit Card Refund"),
+            ('gc_refund', 'Gift Card Refund')
+        ], "Invoice Control", select=True, required=True, readonly=True, states={'draft': [('readonly', False)]}),
         'giftcard_id': fields.many2one('gift.card', 'Gift Card for Refund', {'required': False})
     }
 

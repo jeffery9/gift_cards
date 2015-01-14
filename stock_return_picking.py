@@ -145,8 +145,6 @@ class stock_return_picking(osv.TransientModel):
                     if new_pick_id:
                         self.pool.get('stock.picking').write(cr, uid, new_pick_id, {'voucher_id':voucher_ids[0]}, context=context)
 
-        cr.commit()
-
         return res
 
 stock_return_picking()
@@ -184,11 +182,11 @@ class stock_picking(osv.osv):
         pick = self.browse(cr, uid, record_id, context=context)
 
         # Refund to gift card on a voucher if a gift card was used, by default.
-        if pick:
+        if pick and pick.id:
             if 'invoice_state' in fields:
                 voucher_ids = voucher_orm.read(cr, uid, voucher_orm.search(cr, uid, [
                     ('rel_sale_order_id', '=', pick.sale_id.id), ('state', '=', 'posted'),
-                    ('type', '=', 'receipt'), ('giftcard_id', '!=', False)
+                    ('type', '=', 'receipt'), ('giftcard_id', '!=', None)
                 ], order="id desc", context=context), context=context)
 
                 if voucher_ids:

@@ -42,8 +42,6 @@ class sale_order(osv.osv):
                             "giftcard_id": new_card_id
                         })
 
-        cr.commit()
-
         return success
 
     def action_wait(self, cr, uid, ids, context=None):
@@ -63,8 +61,6 @@ class sale_order(osv.osv):
                         success = success and line_orm.copy(cr, uid, line.id, {"product_uom_qty": 1})
                     success = success and line_orm.write(cr, uid, line.id, {"product_uom_qty": 1})
 
-        cr.commit()
-
         return success and super(sale_order, self).action_wait(cr, uid, ids, context=context)
 
 sale_order()
@@ -76,7 +72,7 @@ class sale_order_line(osv.osv):
 
         values = {}
         for line in self.browse(cr, uid, ids):
-            values[line.id] = 0 if line.giftcard_id else (line.price_subtotal / line.product_uom_qty or 1)
+            values[line.id] = 0 if line.giftcard_id else (line.price_subtotal / (line.product_uom_qty or 1))
 
         return values
 

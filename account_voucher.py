@@ -86,15 +86,19 @@ class account_voucher(osv.osv):
 
         # Subtract charges from gift cards.
         for voucher in filter(lambda voucher: voucher.giftcard_id, vouchers):
+            if (voucher.giftcard_id.balance - voucher.amount) < 0:
+                raise Exception(
+                    'Insufficient funds on gift card %s to pay voucher %s' % (str(voucher.giftcard_id), str(voucher))
+                )
             giftcard_orm.write(cr, uid, [voucher.giftcard_id.id], {
                 'balance': voucher.giftcard_id.balance - voucher.amount
             })
 
         # Mark the payment lines as processed/validated.
-        wf_service = netsvc.LocalService("workflow")
+        #wf_service = netsvc.LocalService("workflow")
 
-        for res_id in ids:
-            wf_service.trg_validate(uid, 'account.voucher', res_id, 'proforma_voucher', cr)
+        #for res_id in ids:
+        #    wf_service.trg_validate(uid, 'account.voucher', res_id, 'proforma_voucher', cr)
 
         return True
 

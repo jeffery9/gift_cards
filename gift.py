@@ -1,6 +1,7 @@
-import re
+import re, time
 from helpers.shortuuid import uuid
 from openerp.osv import fields, osv
+from openerp.tools.misc import DEFAULT_SERVER_DATE_FORMAT
 
 class card(osv.osv):
     """Represents a gift card in the system."""
@@ -31,5 +32,20 @@ class card(osv.osv):
         # just have way too many damn gift cards in your database.
         ('number_unique', 'unique(number)', 'Card number collision! Try again.')
     ]
+
+    def undelivered_cards(self, cr, uid, context=None):
+        cards = self.browse(cr, uid, self.search(cr, uid, [
+            ('email_sent', '=', False), ('email_date', '<=', time.strftime(DEFAULT_SERVER_DATE_FORMAT))
+        ]))
+
+        return [{'id': c.id,
+                 'code': c.number,
+                 'balance': c.balance,
+                 'recipient': c.email_recipient,
+                 'note': c.note
+                } for c in cards]
+
+    def mark_delivered(self, cr, uid, ids, context=None):
+        return self.write(cr, uid, ids, {'email_sent': True})
 
 card()

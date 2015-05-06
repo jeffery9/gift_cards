@@ -39,6 +39,10 @@
                         <field name="balance" colspan="4"/>
                         <field name="order_id" colspan="4" string="Receipt" />
                         <field name="voucher_ids" colspan="4" string="History" />
+                        <field name="email_recipient" colspan="4" />
+                        <field name="email_date" colspan="4" />
+                        <field name="email_sent" colspan="4" />
+                        <field name="note" colspan="4" />
                     </group>
                 </form>
             </field>

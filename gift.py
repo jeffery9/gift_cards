@@ -11,7 +11,11 @@ class card(osv.osv):
         'balance': fields.float('Balance'),#, readonly=True),
         'voucher_ids': fields.one2many('account.voucher', 'giftcard_id', 'Vouchers', readonly=True),
         'sale_order_line_id': fields.many2one('sale.order.line', 'Order Line', readonly=True),
-        'order_id': fields.many2one('sale.order', 'Sale Order', readonly=True)
+        'order_id': fields.many2one('sale.order', 'Sale Order', readonly=True),
+        'email_recipient': fields.char('Recipient Email', size=128),
+        'email_date': fields.date('Email After'),
+        'email_sent': fields.boolean('Email Sent?', readonly=1),
+        'note': fields.text('Certificate Note')
     }
     _defaults = {
         # Creates a random string of 16 characters,

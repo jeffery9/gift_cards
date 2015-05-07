@@ -3,7 +3,7 @@ from openerp.osv import fields, osv
 from tools.translate import _
 import netsvc
 import collections
-
+from datetime import datetime
 class sale_order(osv.osv):
     def _has_giftcards(self, cr, uid, ids, field_name, arg, context=None):
         res = {}
@@ -35,7 +35,10 @@ class sale_order(osv.osv):
                         new_card_id = card_pool.create(cr, uid, {
                             "balance": line.price_unit,
                             'sale_order_line_id': line.id,
-                            'order_id': order.id
+                            'order_id': order.id,
+                            'partner_id': order.partner_id.id,
+                            'date_purchase': str(datetime.today().date()),
+                            'init_amount':line.price_unit
                         }, context=context)
 
                         line_pool.write(cr, uid, line.id, {

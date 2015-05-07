@@ -23,6 +23,9 @@
             <field name="arch" type="xml">
                 <tree string="Gift Cards">
                     <field name="number"/>
+                    <field name="date_purchase"/>
+                    <field name="partner_id"/>
+                    <field name="init_amount"/>
                     <field name="balance"/>
                 </tree>
             </field>
@@ -36,7 +39,10 @@
                 <form string="Gift Card" version="7.0">
                     <group colspan="4" col="4">
                         <field name="number" colspan="4"/>
+                        <field name="partner_id" colspan="4" />
+                        <field name="init_amount" colspan="4" />
                         <field name="balance" colspan="4"/>
+                        <field name="date_purchase" colspan="4" />
                         <field name="order_id" colspan="4" string="Receipt" />
                         <field name="voucher_ids" colspan="4" string="History" />
                         <field name="email_recipient" colspan="4" />

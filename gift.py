@@ -6,8 +6,20 @@ class card(osv.osv):
     """Represents a gift card in the system."""
     _name = "gift.card"
     _rec_name = "number"
+    
+    def _last_four_number(self, cr, uid, ids,name, arg, context=None):
+        res = {}
+        for id in ids:
+            number = self.browse(cr,uid,id,context=None).number
+            print number
+            try:
+                res[id] = '**** **** **** ' +number[-4:]
+            except:
+                res[id] = 'Bad Number'
+        return res
+
     _columns = {
-        'number': fields.char('Card Number', size=19),
+        'number': fields.char('Gift Card Number', size=19),
         'balance': fields.float('Balance'),#, readonly=True),
         'voucher_ids': fields.one2many('account.voucher', 'giftcard_id', 'Vouchers', readonly=True),
         'sale_order_line_id': fields.many2one('sale.order.line', 'Order Line', readonly=True),
@@ -16,9 +28,10 @@ class card(osv.osv):
         'email_date': fields.date('Email After'),
         'email_sent': fields.boolean('Email Sent?', readonly=1),
         'note': fields.text('Certificate Note'),
-        'date_purchase': fields.date('Date Purchase', readonly=True),
+        'date_purchase': fields.date('Date Purchased', readonly=True),
         'partner_id':fields.many2one('res.partner', 'Purchaser' ,readonly=True),
         'init_amount':fields.float('Initial Amount', readonly=True),
+        'last_four_number':fields.function(_last_four_number, string='Last Four of Card', type='char',store = False,),
     }
     _defaults = {
         # Creates a random string of 16 characters,

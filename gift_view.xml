@@ -22,7 +22,7 @@
             <field name="model">gift.card</field>
             <field name="arch" type="xml">
                 <tree string="Gift Cards">
-                    <field name="number"/>
+                    <field name="last_four_number"/>
                     <field name="date_purchase"/>
                     <field name="partner_id"/>
                     <field name="init_amount"/>

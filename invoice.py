@@ -27,10 +27,10 @@ class account_invoice(osv.osv):
     
     _inherit = 'account.invoice'
     _columns = {
-        'gift_card' : fields.boolean('Gift Card', readonly=True)
+        'gift_card': fields.boolean('Gift Card', readonly=True)
     }
     _defaults = {
-        'gift_card' : False
+        'gift_card': False
     }
 
     def refund(self, cr, uid, ids, date=None, period_id=None, description=None, journal_id=None, context=None):

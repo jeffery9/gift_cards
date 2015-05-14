@@ -4,6 +4,7 @@ from tools.translate import _
 import netsvc
 import collections
 from datetime import datetime
+
 class sale_order(osv.osv):
     def _has_giftcards(self, cr, uid, ids, field_name, arg, context=None):
         res = {}
@@ -27,6 +28,7 @@ class sale_order(osv.osv):
         success = True
         card_pool = self.pool.get('gift.card')
         line_pool = self.pool.get('sale.order.line')
+        gift_card_ids = []
 
         for order in self.browse(cr, uid, ids, context=context):
             for line in order.order_line:
@@ -44,6 +46,9 @@ class sale_order(osv.osv):
                         line_pool.write(cr, uid, line.id, {
                             "giftcard_id": new_card_id
                         })
+                        gift_card_ids.append(new_card_id)
+
+        card_pool.create_liability_move(cr, uid, gift_card_ids, context=context)
 
         return success
 

@@ -36,7 +36,7 @@ class account_voucher(osv.osv):
     
     _columns = {
         'origin': fields.char('Origin', size=16, help='Mentions the reference of Sale/Purchase document'),
-        'giftcard_id': fields.many2one('gift.card', 'Gift Card', { 'required': False }) 
+        'giftcard_id': fields.many2one('gift.card', 'Gift Card', {'required': False})
     }
 
     def check_card_transaction(self, vouchers):
@@ -46,7 +46,7 @@ class account_voucher(osv.osv):
         Raises an error if they don't.
 
         '''
-        
+
         # We want to grab all the vouchers with gift cards and make an index
         # of their gift cards' balances, keyed off the gift card numbers, to
         # facilitate checking those balances against the charges against them.
@@ -75,7 +75,7 @@ class account_voucher(osv.osv):
         Subtracts the invoice line charges from the gift card balances after
         first checking to make sure that each gift card has enough on it to
         actually cover the charges being attempted against it.
-        
+
         '''
 
         # Make sure the requested charges can actually be made
@@ -93,6 +93,8 @@ class account_voucher(osv.osv):
             giftcard_orm.write(cr, uid, [voucher.giftcard_id.id], {
                 'balance': voucher.giftcard_id.balance - voucher.amount
             })
+
+        giftcard_orm.create_redemption_move(cr, uid, voucher.amount, context=context)
 
         # Mark the payment lines as processed/validated.
         #wf_service = netsvc.LocalService("workflow")
@@ -119,6 +121,10 @@ class account_voucher(osv.osv):
                 giftcard_orm.write(cr, uid, [voucher.giftcard_id.id], {
                     'balance': voucher.giftcard_id.balance + voucher.amount
                 })
+
+                # Put the refunded balance back into our gift card liabilities.
+                giftcard_orm.create_refund_move(cr, uid, voucher.amount, context=context)
+
         return True
 
 
@@ -128,5 +134,5 @@ class account_voucher(osv.osv):
         '''
         self.authorize_card(cr, uid, ids, context=context)
         return super(account_voucher, self).proforma_voucher(cr, uid, ids, context=context)
-    
+
 account_voucher()

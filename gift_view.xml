@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
+        <record id="action_gift_card_config" model="ir.actions.act_window">
+			<field name="name">Gift Card Journals</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="res_model">gift.card.config</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Specify which journals to use for gift cards.
+              </p>
+            </field>
+		</record>
+
+        <menuitem action="action_gift_card_config" id="menu_gift_card_config" parent="account.menu_account_config"
+                  sequence="5" groups="account.group_account_manager"/>
+
+        <record id="tree_gift_card_config" model="ir.ui.view">
+            <field name="name">gift.card.config.tree</field>
+            <field name="type">tree</field>
+            <field name="model">gift.card.config</field>
+            <field name="arch" type="xml">
+                <tree string="Gift Card Journals">
+                    <field name="company_id" />
+                    <field name="liability_journal_id" />
+                    <field name="cash_journal_id" />
+                </tree>
+            </field>
+        </record>
+
+        <record id="form_gift_card_config" model="ir.ui.view">
+            <field name="name">gift.card.config.form</field>
+            <field name="type">form</field>
+            <field name="model">gift.card.config</field>
+            <field name="arch" type="xml">
+                <form string="Gift Card Journals" version="7.0">
+                    <group colspan="4" col="4">
+                        <field name="name" colspan="4" invisible="1" />
+                        <field name="company_id" colspan="4" on_change="onchange_company_id(company_id)" />
+                        <field name="liability_journal_id" colspan="4">
+                            <filter domain="[('company_id', '=', company_id), (%(account.data_account_type_liability)d, 'in', 'type_control_ids')]" />
+                        </field>
+                        <field name="cash_journal_id" filter_domain="[('company_id', '=', company_id), (%(account.data_account_type_cash)d, 'in', 'type_control_ids')]" colspan="4" />
+                    </group>
+                </form>
+            </field>
+        </record>
+
         <record id="action_gift_card" model="ir.actions.act_window">
 			<field name="name">Gift Cards</field>
 			<field name="type">ir.actions.act_window</field>
@@ -14,7 +61,7 @@
             </field>
 		</record>
 
-         <menuitem action="action_gift_card" id="menu_gift_card" parent="base.menu_sales" sequence="5" groups="base.group_sale_salesman,base.group_sale_manager"/>
+        <menuitem action="action_gift_card" id="menu_gift_card" parent="base.menu_sales" sequence="5" groups="base.group_sale_salesman,base.group_sale_manager"/>
 
         <record id="tree_gift_card" model="ir.ui.view">
             <field name="name">gift.card.tree</field>

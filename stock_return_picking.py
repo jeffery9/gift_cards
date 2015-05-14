@@ -131,6 +131,7 @@ class stock_return_picking(osv.TransientModel):
                 # Refund the selected gift card.
                 giftcard = giftcard_orm.browse(cr, uid, data['giftcard_id'], context=context)
                 giftcard_orm.write(cr, uid, data['giftcard_id'], {'balance': giftcard.balance + amount})
+                giftcard_orm.create_refund_move(cr, uid, amount, context=context)
 
                 # Grab all the vouchers with gift cards to be moved over to the new delivery order...?
                 voucher_ids = voucher_obj.search(cr, uid, [
@@ -232,6 +233,7 @@ class stock_picking(osv.osv):
             # If there's some amount to refund, then refund it.
             if amount and pick.giftcard_id:
                 giftcard_orm.write(cr, uid, pick.giftcard_id, {"balance": pick.giftcard_id.balance + amount})
+                giftcard_orm.create_refund_move(cr, uid, amount, context=context)
 
         return res
 stock_picking()

@@ -66,7 +66,7 @@ class account_voucher(osv.osv):
                 raise osv.except_osv(_('Error'), _('Gift card (%s) is not active!') % gcard.number)
 
             giftcards[gcard.number] -= voucher.amount
-            if giftcards[gcard.number] <= 0:
+            if giftcards[gcard.number] < 0:
                 raise osv.except_osv(_('Error'), _("Gift card has insufficient funds!"))
         return True
 

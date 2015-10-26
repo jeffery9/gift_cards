@@ -112,7 +112,8 @@ class card(osv.osv):
         account_pool = self.pool.get('account.account')
         for account_id, amount in accounts.iteritems():
             from_account = account_pool.browse(cr, uid, account_id, context=context)
-            self.create_move_lines(cr, uid, name="Gift Card Creation", amount=amount,
+            currency_id = from_account.currency_id.id
+            self.create_move_lines(cr, uid,move_id, name="Gift Card Creation", amount=amount,
                                    to_account=to_account.id, from_account=from_account.id, context=context)
 
         return move_id
@@ -132,7 +133,8 @@ class card(osv.osv):
         account_pool = self.pool.get('account.account')
         for account_id, amount in accounts.iteritems():
             to_account = account_pool.browse(cr, uid, account_id, context=context)
-            self.create_move_lines(cr, uid, name="Gift Card Refund", amount=amount,
+            currency_id = to_account.currency_id.id
+            self.create_move_lines(cr, uid,move_id, name="Gift Card Refund", amount=amount,
                                    to_account=to_account.id, from_account=from_account.id, context=context)
 
         return move_id
@@ -140,6 +142,9 @@ class card(osv.osv):
     def create_redemption_move(self, cr, uid, amount, context=None):
         config = self.get_config(cr, uid, context=context)
         move_id = self.create_move(cr, uid, config.gift_card_journal_id.id, config.company_id.id, context=context)
+        account_pool = self.pool.get('account.account')
+        to_account = account_pool.browse(cr, uid, config.redemption_account_id, context=context)
+        currency_id = to_account.currency_id.id
         self.create_move_lines(cr, uid, move_id, name='Gift Card Use', amount=amount,
                                to_account=config.redemption_account_id, from_account=config.liability_account_id,
                                context=context)
@@ -148,6 +153,9 @@ class card(osv.osv):
     def create_refund_move(self, cr, uid, amount, context=None):
         config = self.get_config(cr, uid, context=context)
         move_id = self.create_move(cr, uid, config.gift_card_journal_id.id, config.company_id.id, context=context)
+        account_pool = self.pool.get('account.account')
+        to_account = account_pool.browse(cr, uid, config.liability_account_id, context=context)
+        currency_id = to_account.currency_id.id
         self.create_move_lines(cr, uid, move_id, name='Refund to Gift Card', amount=amount,
                                to_account=config.liability_account_id, from_account=config.redemption_account_id,
                                context=context)
@@ -162,6 +170,13 @@ class card(osv.osv):
 
     def create_move_lines(self, cr, uid, move_id, name='Gift Card', amount=None,
                           to_account=None, from_account=None, context=None):
+
+        account_pool = self.pool.get('account.account')
+        to_account_obj = account_pool.browse(cr, uid, to_account, context=context)
+        to_currency_id = to_account_obj.currency_id.id
+        from_account_obj = account_pool.browse(cr, uid, from_account, context=context)
+        from_currency_id = from_account_obj.currency_id.id
+
         line_pool = self.pool.get('account.move.line')
         line_pool.create(cr, uid, {
             'name': name,
@@ -169,15 +184,17 @@ class card(osv.osv):
             'account_id': from_account,
             'move_id': move_id,
             'debit': amount,
-            'amount_currency': amount
+            # 'currency_id': from_currency_id,
+            # 'amount_currency': amount
         }, context=context)
         line_pool.create(cr, uid, {
             'name': name,
             'quantity': 1,
             'account_id': to_account,
             'move_id': move_id,
-            'debit': amount,
-            'amount_currency': amount
+            'credit': amount,
+            # 'currency_id': to_currency_id,
+            # 'amount_currency': amount
         }, context=context)
 
 card()

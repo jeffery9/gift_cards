@@ -31,9 +31,9 @@
         'account_voucher',
         'stock',
         'sale_stock',
-        'account_payment_ccapi_authdotnet',
-        'account_payment_creditcard',
-        'account_payment_cim_authdotnet'
+        # 'account_payment_ccapi_authdotnet',
+        # 'account_payment_creditcard',
+        # 'account_payment_cim_authdotnet'
     ],
     'data': [
         'account_invoice_view.xml',

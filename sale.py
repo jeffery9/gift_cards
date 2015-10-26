@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from openerp.osv import fields, osv
-from tools.translate import _
-import netsvc
+from openerp.tools.translate import _
+import openerp.netsvc
 import collections
 from datetime import datetime
 

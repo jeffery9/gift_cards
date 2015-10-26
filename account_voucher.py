@@ -31,9 +31,9 @@ class account_voucher(osv.osv):
     payment line.
 
     '''
-    
+
     _inherit = 'account.voucher'
-    
+
     _columns = {
         'origin': fields.char('Origin', size=16, help='Mentions the reference of Sale/Purchase document'),
         'giftcard_id': fields.many2one('gift.card', 'Gift Card', {'required': False})
@@ -94,7 +94,7 @@ class account_voucher(osv.osv):
                 'balance': voucher.giftcard_id.balance - voucher.amount
             })
 
-        giftcard_orm.create_redemption_move(cr, uid, voucher.amount, context=context)
+            giftcard_orm.create_redemption_move(cr, uid, voucher.amount, context=context)
 
         # Mark the payment lines as processed/validated.
         #wf_service = netsvc.LocalService("workflow")
